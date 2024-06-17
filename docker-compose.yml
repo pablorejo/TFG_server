@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - inferency_motor
+
+  inferency_motor:
+    build: inferency_motor
+    expose:
+      - "8000"
+    deploy:
+      replicas: 1
