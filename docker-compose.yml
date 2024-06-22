@@ -9,10 +9,20 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
     depends_on:
       - inferency_motor
+      - admin
 
   inferency_motor:
     build: inferency_motor
     expose:
       - "8000"
+    volumes:
+      - ./clasify_model:/clasify_model
     deploy:
       replicas: 1
+
+  admin:
+    build: admin
+    volumes:
+      - ./clasify_model:/clasify_model
+    expose:
+      - "8001"
