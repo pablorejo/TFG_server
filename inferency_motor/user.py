@@ -66,7 +66,8 @@ def chek_taxonomic_routes():
 
         # Procesar cada imagen codificada en base64
         for idx, image_data in enumerate(images):
-            image_bytes = base64.b64decode(image_data)
+            image_base64 = image_data['image']
+            image_bytes = base64.b64decode(image_base64)
             saved_files.append(idx)
 
         return jsonify({'status': 'success', 'saved_files': saved_files})
@@ -82,12 +83,7 @@ def chek_taxonomic_route():
 
         # Decodificar la imagen base64
         image_bytes = base64.b64decode(image)
-
-        # # Guardar la imagen en un archivo
-        # image_path = os.path.join('uploaded_images', image_name)
-        # with open(image_path, 'wb') as image_file:
-        #     image_file.write(image_bytes)
-
+        
         return jsonify({'status': 'success', 'message': 'Image uploaded successfully'})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500 
