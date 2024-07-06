@@ -16,13 +16,13 @@ services:
     expose:
       - "8000"
     volumes:
-      - ./clasify_model:/clasify_model
+      - ./runs:/app/runs
     deploy:
       replicas: 1
 
   admin:
     build: admin
     volumes:
-      - ./clasify_model:/clasify_model
+      - ./runs:/runs
     expose:
       - "8001"

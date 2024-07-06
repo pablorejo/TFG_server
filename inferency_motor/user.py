@@ -3,6 +3,7 @@ from flask import Flask,jsonify, request
 import os
 import shutil
 import base64
+from image import Image, TaxonomicRoute, ImageSchema, mode_hight_velocity, mode_hight_precision
 
 MODEL_G_PATH = '/model_g'
 app = Flask(__name__)
@@ -15,7 +16,7 @@ def hello_world():
 def sync():
     global MODEL_G_PATH
     try:
-        source_dir = "/clasify_model"
+        source_dir = "/runs"
         dest_dir = MODEL_G_PATH  # Cambia esto a la ubicación deseada dentro del contenedor
 
         if not os.path.exists(dest_dir):
@@ -57,34 +58,70 @@ def check_sync():
     
 @app.route('/user/taxonomic_routes', methods=['POST'])
 def chek_taxonomic_routes():
+    """This is the route to use hight precision mode
+
+    Returns:
+        json: json with a class Image
+    """
     try:
         # Obtener los datos del JSON
         data = request.get_json()
         images = data['images']
         
-        saved_files = []
+        image = mode_hight_precision(images)
+        
+        
+    
+        image_schema = ImageSchema()
+        image_data = image_schema.dump(image)
+        response = {
+                'status': 'success', 
+                'message': 'Image uploaded successfully',
+                'image': image_data
+            }
 
-        # Procesar cada imagen codificada en base64
-        for idx, image_data in enumerate(images):
-            image_base64 = image_data['image']
-            image_bytes = base64.b64decode(image_base64)
-            saved_files.append(idx)
-
-        return jsonify({'status': 'success', 'saved_files': saved_files})
+        return jsonify(response)
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
    
 @app.route('/user/taxonomic_route', methods=['POST'])
 def chek_taxonomic_route():
+    """This is the route to use hight velocity mode
+
+    Returns:
+        json: json who contains a list o class Image
+    """
     try:
         # Obtener los datos del JSON
         data = request.get_json()
         image = data['image']
 
-        # Decodificar la imagen base64
-        image_bytes = base64.b64decode(image)
+        # Use mode hight velocity
+        results = mode_hight_velocity(image)
         
-        return jsonify({'status': 'success', 'message': 'Image uploaded successfully'})
+        
+        if results == None:
+            return jsonify({'status': 'success', 'message': 'there is no organism in the image'}), 200 
+        
+        # Change to json all images
+        results_json = []
+        image_schema = ImageSchema()
+        for result in results:
+            json_image = {
+                'status': 'success', 
+                'message': 'Image uploaded successfully',
+                'image': image_schema.dump(result)
+            }
+            results_json.append(json_image)
+        
+        # create the return array
+        response_array = {
+            "responseImages": results_json,
+            'message': 'Image uploaded successfully',
+            'status': 'success'
+        }
+        
+        return jsonify(response_array)
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500 
 
