@@ -3,3 +3,4 @@
 *.png
 /runs/*
 /clasify_model
+/runs?

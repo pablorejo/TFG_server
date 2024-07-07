@@ -65,8 +65,19 @@ class TaxonomicRoute:
             self.especie = name
             self.conf_especie = conf
             
-    def get_global_conf(self):
-        return self.conf_clase*self.conf_orden*self.conf_familia*self.conf_genero*self.conf_especie    
+    def get_conf_to_order(self):
+        """This funtion is used to order taxonomic routes adding more important in higth taxons
+
+        Returns:
+            _type_: _description_
+        """
+        conf_clase = self.conf_clase if self.conf_clase is not None else 1
+        conf_orden = self.conf_orden if self.conf_orden is not None else 1
+        conf_familia = self.conf_familia if self.conf_familia is not None else 1
+        conf_genero = self.conf_genero if self.conf_genero is not None else 1
+        conf_especie = self.conf_especie if self.conf_especie is not None else 1
+    
+        return conf_clase * 10000 + conf_orden * 1000 + conf_familia * 100  + conf_genero * 10 + conf_especie
     
     def merge_taxonomic_route(self,taxonomic_route):
         taxonomic_route = TaxonomicRoute(taxonomic_route)
@@ -75,6 +86,15 @@ class TaxonomicRoute:
         self.conf_familia = (self.conf_familia+taxonomic_route.conf_familia)/2
         self.conf_genero = (self.conf_genero+taxonomic_route.conf_genero)/2
         self.conf_especie = (self.conf_especie+taxonomic_route.conf_especie)/2
+        
+    def get_unique_value(self):
+        clase = self.clase if self.clase is not None else ""
+        orden = self.orden if self.orden is not None else ""
+        familia = self.familia if self.familia is not None else ""
+        genero = self.genero if self.genero is not None else ""
+        especie = self.especie if self.especie is not None else ""
+        
+        return f"{clase}_{orden}_{familia}_{genero}_{especie}"
         
 class Image:
     def __init__(self,
@@ -93,11 +113,12 @@ class Image:
         self.taxonomic_rank_top5 = taxonomic_rank_top5
         
     def set_taxonomic_routes(self, taxonomic_routes):
-        self.taxonomic_rank_top1 = taxonomic_routes[0]
-        self.taxonomic_rank_top2 = taxonomic_routes[1]
-        self.taxonomic_rank_top3 = taxonomic_routes[2]
-        self.taxonomic_rank_top4 = taxonomic_routes[3]
-        self.taxonomic_rank_top5 = taxonomic_routes[4]
+        self.taxonomic_rank_top1 = taxonomic_routes[0] if len(taxonomic_routes) > 0 else None
+        self.taxonomic_rank_top2 = taxonomic_routes[1] if len(taxonomic_routes) > 1 else None
+        self.taxonomic_rank_top3 = taxonomic_routes[2] if len(taxonomic_routes) > 2 else None
+        self.taxonomic_rank_top4 = taxonomic_routes[3] if len(taxonomic_routes) > 3 else None
+        self.taxonomic_rank_top5 = taxonomic_routes[4] if len(taxonomic_routes) > 4 else None
+
          
 # Definir los esquemas de marshmallow
 class TaxonomicRouteSchema(Schema):
@@ -182,11 +203,12 @@ def predict_image(image, one_taxonomic_route = False):
             
     return taxonomic_routes
 
-def predic_image_mode_precision(imgages):
+def predic_image_mode_precision(images):
     def calc_global_conf(routes):
         conf = 0
         for route in routes:
-            conf += route.get_global_conf()
+            conf += route.get_conf_to_order()
+        return conf
             
     def merge_taxonomic_routes(routes):
         new_routes = []
@@ -195,19 +217,21 @@ def predic_image_mode_precision(imgages):
                 route[0].merge_taxonomic_route(route_2)
             new_routes.append(route[0])
         return new_routes
-                
+        
     predicted_images = {}
-    for image in imgages:
+    for image in images:
         predict_image_routes = predict_image(image,one_taxonomic_route=True)
         route_top1 = predict_image_routes[0]
-        if route_top1.especie in predicted_images:
-            
-            predicted_images[route_top1.especie].apend(route_top1) 
+        unique_value = route_top1.get_unique_value()
+        if unique_value in predicted_images:
+            predicted_images[unique_value].append(route_top1) 
         else:
-            predicted_images[route_top1.especie] = [route_top1]
+            if route_top1 != None:
+                predicted_images[unique_value] = [route_top1]
     
-    sorted_routes = sorted(predicted_images.items(), key=lambda routes: calc_global_conf(routes), reverse=True)
+    sorted_routes = sorted(list(predicted_images.values()), key=lambda routes: calc_global_conf(routes), reverse=True)
     routes = merge_taxonomic_routes(sorted_routes)
+    
     return routes
     
 def image_to_base64(image_path):
@@ -390,7 +414,7 @@ def mode_hight_precision(images):
     for i,image in enumerate(images):
         image_path = f"image_{i}.jpg"
         base64_to_image(image,image_path)
-        images_path.append(images_path)
+        images_path.append(image_path)
     
     # now check all images
     correct_images_path = []
@@ -398,14 +422,13 @@ def mode_hight_precision(images):
     for image_path in images_path:
         if discard_bad_image(image_path,model_to_discard):
             correct_images_path.append(image_path)
-    del images_path
     
     # Use funtion mode hight precision
     routes = predic_image_mode_precision(correct_images_path)
     
     image = Image()
     image.set_taxonomic_routes(routes)
-    for image_path in images_path:
+    for image_path in correct_images_path:
         image_64 = image_to_base64(image_path)
         image.images.append(image_64)
     
@@ -415,12 +438,16 @@ def mode_hight_precision(images):
     
     
 if __name__ == "__main__":
-    images_rapid = ['350564589_2.webp','image copy.png']
+    images_precision = ['350564589_2.webp','image copy.png']
     image_path_1 = 'image_2.png'
     image_path_2 = 'image.png'
     
     image_64 = image_to_base64(image_path_1)
-    
-    json =  mode_hight_velocity(image64=image_64)
+    images = []
+    for image in images_precision:
+        images.append(image_to_base64(image))
+        
+    # json =  mode_hight_velocity(image64=image_64)
+    json = mode_hight_precision(images)
     print('fin')
     

@@ -4,6 +4,7 @@ import os
 import shutil
 import base64
 from image import Image, TaxonomicRoute, ImageSchema, mode_hight_velocity, mode_hight_precision
+import logging
 
 MODEL_G_PATH = '/model_g'
 app = Flask(__name__)
@@ -50,6 +51,7 @@ def check_sync():
         return jsonify({"sync": str_return_files})
     
     except FileNotFoundError:
+        
         return jsonify({"error": f"Directory {MODEL_G_PATH} does not exist."}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -82,7 +84,9 @@ def chek_taxonomic_routes():
 
         return jsonify(response)
     except Exception as e:
+        logging.error(f'ha ocurrido un error en check taxonomic routes\nError: {str(e)}')
         return jsonify({'status': 'error', 'message': str(e)}), 500
+    
    
 @app.route('/user/taxonomic_route', methods=['POST'])
 def chek_taxonomic_route():
@@ -123,6 +127,7 @@ def chek_taxonomic_route():
         
         return jsonify(response_array)
     except Exception as e:
+        logging.error(f'ha ocurrido un error en check taxonomic route\nError: {str(e)}')
         return jsonify({'status': 'error', 'message': str(e)}), 500 
 
 if __name__ == '__main__':
