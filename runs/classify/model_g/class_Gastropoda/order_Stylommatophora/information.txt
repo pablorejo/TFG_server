@@ -1,0 +1,3 @@
+The function took 1118.630072593689 seconds to execute.
+The train took 41.13260889053345 seconds to execute.
+The proces of chunks took 1060.759034395218 seconds to execute.

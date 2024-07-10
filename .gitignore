@@ -1,6 +1,6 @@
 *.jpg
 *.webp
 *.png
-/runs/*
+
 /clasify_model
-/runs?
+/runs2
